@@ -142,6 +142,7 @@ venv.bak/
 
 #config.json
 config.json
+.config/json
 
 # mypy
 .mypy_cache/
