@@ -141,8 +141,8 @@ venv.bak/
 /site
 
 #config.json
-config.json
-.config/json
+keys.json
+.keys/json
 
 # mypy
 .mypy_cache/
