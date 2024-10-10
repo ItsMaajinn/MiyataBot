@@ -89,7 +89,16 @@ async def nuke(ctx):
 @bot.command()
 async def info(ctx, member: discord.Member = None):
     if member is None:
-        member = ctx.author  # Si aucun utilisateur n'est mentionné, utiliser l'auteur de la commande
+        # Si aucun utilisateur n'est mentionné, utiliser l'auteur de la commande
+        member = ctx.author
+    else:
+        # Vérifier si member est un ID (int) ou une mention
+        if isinstance(member, int):
+            try:
+                member = await ctx.guild.fetch_member(member)  # Essayer de récupérer le membre par ID
+            except discord.NotFound:
+                await ctx.send("Cet ID ne correspond à aucun membre de ce serveur.")
+                return
 
     # Récupérer l'avatar de l'utilisateur
     avatar_url = member.avatar.url if member.avatar else "Aucun avatar"
@@ -128,7 +137,6 @@ async def info(ctx, member: discord.Member = None):
     embed.add_field(name="Serveur(s) en commun", value=f"**{common_count}**", inline=True)
     embed.add_field(name="Liste des serveurs", value="\n".join([f"* {server}" for server in server_names]) if server_names else "Aucun serveur commun", inline=True)
 
-
     # Si l'utilisateur a une bannière, l'ajouter à l'embed
     if banner_url:
         embed.set_image(url=banner_url)  # Afficher la bannière directement dans l'embed
@@ -136,6 +144,7 @@ async def info(ctx, member: discord.Member = None):
 
     # Envoyer l'embed
     await ctx.send(embed=embed)
+
 
 # Fonction modifiée pour retourner également les noms des serveurs communs
 async def count_common_servers(ctx, member):
@@ -151,6 +160,8 @@ async def count_common_servers(ctx, member):
             server_names.append(guild.name)  # Ajouter le nom de la guilde à la liste
 
     return common_count, server_names
+
+
 
 @bot.command()
 async def serveurs(ctx, member: discord.Member = None):
@@ -187,6 +198,23 @@ async def emojis(ctx):
             await ctx.send(chunk)
     else:
         await ctx.send("Ce serveur n'a pas d'émojis personnalisés.")
+
+
+@bot.command()
+async def find(ctx, id: int):
+    try:
+        # Essayer de récupérer un membre du serveur actuel
+        member = await ctx.guild.fetch_member(id)
+        await ctx.send(f"Utilisateur trouvé dans ce serveur : {member.name}#{member.discriminator}")
+    except discord.NotFound:
+        # Si le membre n'est pas dans le serveur, essayer de récupérer les infos globales de l'utilisateur
+        user = await bot.fetch_user(id)
+        await ctx.send(f"Utilisateur trouvé globalement : {user.name}#{user.discriminator}")
+    except discord.Forbidden:
+        await ctx.send("Je n'ai pas la permission de récupérer les informations de cet utilisateur.")
+    except Exception as e:
+        await ctx.send(f"Erreur : {str(e)}")
+
 
 
 

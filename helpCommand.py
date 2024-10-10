@@ -23,6 +23,9 @@ async def helpCommand(ctx, confData):
         embed.add_field(name=":fire: | flammes", value="Viens on fait les flammes", inline=False)
         embed.add_field(name=":telephone_receiver: | allobassem", value="Radio Hlib :on: :top:", inline=False)
         embed.add_field(name=":camera_with_flash:  | info", value="On chope tes infos en bien gars", inline=False)
+        embed.add_field(name=":japanese_castle:  | serveurs", value="Oe ça vient d'où ?", inline=False)
+        embed.add_field(name=":nerd:  | emojis", value="Les emojis custom du serv", inline=False)
+        embed.add_field(name=":spy:  | find", value="L'ID a qui :interrobang:", inline=False)
         embed.add_field(name=":grey_question: | help", value="Pour te carry", inline=False)
         embed.set_footer(text="Allo Selem")
         embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.url)
@@ -52,4 +55,5 @@ async def helpCommand(ctx, confData):
 
     except asyncio.TimeoutError:
         await ctx.send(f"{ctx.author.mention}, tu n'as pas répondu à temps ! 😢")
+
 
