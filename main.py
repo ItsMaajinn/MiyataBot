@@ -4,6 +4,14 @@ import asyncio
 import json
 from helpCommand import helpCommand  # Assurez-vous d'importer la fonction correctement
 import random
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+# Récupérer le token
+TOKEN = os.getenv('TOKEN')
+
 
 # Ouvrir les fichiers de configuration
 with open('keys.json', 'r') as cfg:
@@ -218,4 +226,4 @@ async def find(ctx, id: int):
 
 
 
-bot.run(data["token"])
+bot.run(TOKEN)
