@@ -4,10 +4,10 @@ import asyncio
 import json
 from helpCommand import helpCommand  # Assurez-vous d'importer la fonction correctement
 import random
+import os
 
+toktok = os.environ.get('TOKEN')
 # Ouvrir les fichiers de configuration
-with open('keys.json', 'r') as cfg:
-    data = json.load(cfg)
 
 with open('config.json', 'r') as cfg:
     confData = json.load(cfg)
@@ -219,4 +219,4 @@ async def find(ctx, id: int):
 
 
 
-bot.run(data["token"])
+bot.run(toktok)
