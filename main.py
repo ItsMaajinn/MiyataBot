@@ -14,8 +14,7 @@ TOKEN = os.getenv('TOKEN')
 
 
 # Ouvrir les fichiers de configuration
-with open('keys.json', 'r') as cfg:
-    data = json.load(cfg)
+
 
 with open('config.json', 'r') as cfg:
     confData = json.load(cfg)
