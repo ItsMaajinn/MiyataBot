@@ -4,10 +4,10 @@ import asyncio
 import json
 from helpCommand import helpCommand  # Assurez-vous d'importer la fonction correctement
 import random
-import os
 
-toktok = os.environ.get('TOKEN')
 # Ouvrir les fichiers de configuration
+with open('keys.json', 'r') as cfg:
+    data = json.load(cfg)
 
 with open('config.json', 'r') as cfg:
     confData = json.load(cfg)
@@ -163,7 +163,6 @@ async def count_common_servers(ctx, member):
 
 
 
-
 @bot.command()
 async def serveurs(ctx, member: discord.Member = None):
     """Vérifie combien de serveurs sont partagés avec un utilisateur spécifié."""
@@ -219,4 +218,4 @@ async def find(ctx, id: int):
 
 
 
-bot.run(toktok)
+bot.run(data["token"])
