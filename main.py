@@ -163,6 +163,7 @@ async def count_common_servers(ctx, member):
 
 
 
+
 @bot.command()
 async def serveurs(ctx, member: discord.Member = None):
     """Vérifie combien de serveurs sont partagés avec un utilisateur spécifié."""
