@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import os
 
 async def helpCommand(ctx, confData):
     msg = await ctx.send(f"{ctx.author.mention}, où veux-tu recevoir les commandes ? 1️⃣ Sur le serveur 2️⃣ En MP ")
@@ -32,13 +33,19 @@ async def helpCommand(ctx, confData):
 
         # Charger et attacher les images
         files = []  # Liste pour stocker les fichiers à envoyer
+        base_path = os.path.dirname(__file__)  # Répertoire actuel du fichier Python
+
         try:
-            with open("assets/pp.jpg", "rb") as f:
+            # Charger la première image
+            picture1_path = os.path.join(base_path, "../assets/pp.jpg")
+            with open(picture1_path, "rb") as f:
                 picture1 = discord.File(f, filename="pp.jpg")
                 embed.set_thumbnail(url="attachment://pp.jpg")
                 files.append(picture1)  # Ajouter le fichier à la liste
 
-            with open("assets/pp2.jpg", "rb") as f:
+            # Charger la seconde image
+            picture2_path = os.path.join(base_path, "../assets/pp2.jpg")
+            with open(picture2_path, "rb") as f:
                 picture2 = discord.File(f, filename="pp2.jpg")
                 embed.set_image(url="attachment://pp2.jpg")
                 files.append(picture2)  # Ajouter le fichier à la liste
@@ -55,5 +62,3 @@ async def helpCommand(ctx, confData):
 
     except asyncio.TimeoutError:
         await ctx.send(f"{ctx.author.mention}, tu n'as pas répondu à temps ! 😢")
-
-
