@@ -296,6 +296,12 @@ async def emojis(ctx):
     else:
         await ctx.send("Ce serveur n'a pas d'émojis personnalisés.")
 
+@bot.command()
+@commands.is_owner()
+async def shutdown(context):
+    exit()
+
+
 
 # Lancer le bot
 bot.run(TOKEN)

@@ -9,6 +9,15 @@ def format_time_difference(days):
     else:
         return f"{int(days // 365)} ans"
 
+# Fonction pour récupérer la liste des serveurs communs
+async def count_common_servers(bot, member):
+    """Retourne une liste des serveurs communs entre le bot et l'utilisateur."""
+    common_servers = []
+    for guild in bot.guilds:
+        if member in guild.members:
+            common_servers.append(guild.name)
+    return common_servers
+
 # Fonction pour la commande infoCommand
 async def infoCommand(ctx, bot, member: discord.Member = None):
     """Affiche les informations d'un utilisateur."""
@@ -33,6 +42,12 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
         display_name = member.display_name  # Pseudo d'affichage
         real_name = member.name  # Vrai pseudo
 
+        # Obtenir la liste des serveurs communs
+        common_servers = await count_common_servers(bot, member)
+
+        # Formater la liste des serveurs communs
+        server_list_str = "\n".join([f"- {server}" for server in common_servers]) if common_servers else "Aucun serveur commun."
+
         # Créer un embed avec l'avatar
         embed = discord.Embed(title=f"Informations sur {member}", color=discord.Color.from_rgb(0, 0, 0))
         embed.set_thumbnail(url=avatar_url)  # Ajouter l'avatar en miniature
@@ -45,6 +60,9 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
         embed.add_field(name="Âge sur le serveur", value=format_time_difference(server_age) if server_age else "Inconnu", inline=False)
         embed.add_field(name="Pseudo d'affichage", value=display_name, inline=False)
         embed.add_field(name="Vrai pseudo", value=real_name, inline=False)
+        embed.add_field(name="ID", value=member.id, inline=False)
+        embed.add_field(name="Nombre de serveurs en commun", value=f"{len(common_servers)}", inline=False)
+        embed.add_field(name="Serveurs communs", value=server_list_str, inline=False)  # Liste des serveurs
 
         # Si l'utilisateur a une bannière, l'ajouter à l'embed
         if banner_url:
