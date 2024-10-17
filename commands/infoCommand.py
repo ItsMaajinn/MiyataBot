@@ -24,6 +24,8 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
     if member is None:
         member = ctx.author  # Si aucun utilisateur n'est mentionné, utiliser l'auteur de la commande
 
+
+
     try:
         # Récupérer l'avatar de l'utilisateur
         avatar_url = member.display_avatar.url  # Utilisation de display_avatar pour obtenir l'URL de l'avatar
@@ -48,9 +50,18 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
         # Formater la liste des serveurs communs
         server_list_str = "\n".join([f"- {server}" for server in common_servers]) if common_servers else "Aucun serveur commun."
 
+        roles = member.roles
+
+        # Vérifier si le membre a des rôles
+        if roles:
+            # Le rôle le plus haut est le dernier dans la liste (le premier étant @everyone)
+            role_plus_haut = max(roles, key=lambda r: r.position)
+
         # Créer un embed avec l'avatar
         embed = discord.Embed(title=f"Informations sur {member}", color=discord.Color.from_rgb(0, 0, 0))
         embed.set_thumbnail(url=avatar_url)  # Ajouter l'avatar en miniature
+
+
 
         # Ajouter les informations à l'embed
         # Bloc 1 : Aligné entre 2 et 3
@@ -67,6 +78,7 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
         #Bloc 3
         embed.add_field(name="Nombre de serveurs", value=f"{len(common_servers)}", inline=True)
         embed.add_field(name="Serveurs communs", value=server_list_str, inline=True)  # Liste des serveurs
+        embed.add_field(name="Rôle le plus haut", value=role_plus_haut.mention, inline=True)
         embed.add_field(name ="", value="", inline=False)
 
 

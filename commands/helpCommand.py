@@ -47,12 +47,23 @@ async def helpCommand(ctx, confData):
                 if select.values[0] == "Commandes Fun":
                     embed.add_field(name="🎉 | flammes", value="Viens on fait les flammes", inline=False)
                     embed.add_field(name="🎉 | allobassem", value="Radio Hlib :on: :top:", inline=False)
+                    embed.add_field(name="💥 | nuke", value="Attention grenade", inline=False)
                 elif select.values[0] == "Commandes Admin":
-                    embed.add_field(name="🛠️ | info", value="On chope tes infos en bien gars", inline=False)
-                    embed.add_field(name="🛠️ | serveurs", value="Oe ça vient d'où ?", inline=False)
+                    embed.add_field(name=":crown: | protect <id du message>", value="À la vie à la mort", inline=False)
+                    embed.add_field(name=":crown: | unprotect <id du message>", value="Ah oe nan", inline=False)
+
                 elif select.values[0] == "Commandes Utilitaires":
                     embed.add_field(name="🔧 | emojis", value="Les emojis custom du serv", inline=False)
-                    embed.add_field(name="🔧 | find", value="L'ID a qui :interrobang:", inline=False)
+                    embed.add_field(name="🔧 | find <id membre>", value="L'ID a qui :interrobang:", inline=False)
+                    embed.add_field(name="🔧 | info [@membre ou id membre]", value="On chope tes infos en bien gars", inline=False)
+                    embed.add_field(name="🔧 | serveurs [@membre ou id membre]", value="Oe ça vient d'où ?", inline=False)
+                elif select.values[0] == "Commandes Spotify":
+                    embed.add_field(name="🎵 | spotimusic <nom de la musique>", value="Recherche le lien de la musique (ya pas bassem frr)", inline=False)
+                    embed.add_field(name="🎵 | linkspotify", value=":warning: En dev :warning: ", inline=False)
+                    embed.add_field(name="🎵 | spotifycode", value=":warning: En dev :warning: ", inline=False)
+
+
+
 
                 # Ajout des images à l'embed
                 embed.set_thumbnail(url="attachment://pp.jpg")  # Image 1 dans thumbnail
@@ -68,9 +79,11 @@ async def helpCommand(ctx, confData):
         select = Select(
             placeholder="Choisissez une catégorie de commandes...",
             options=[
-                discord.SelectOption(label="Commandes Fun", description="Les commandes amusantes", emoji="🎉"),
-                discord.SelectOption(label="Commandes Admin", description="Les commandes pour les admins", emoji="🛠️"),
-                discord.SelectOption(label="Commandes Utilitaires", description="Commandes pour utilitaires", emoji="🔧")
+                discord.SelectOption(label="Commandes Fun", description="On se fend la poire 👀", emoji="🎉"),
+                discord.SelectOption(label= "Commandes Spotify", description="Bv l'API", emoji="🎵"),
+                discord.SelectOption(label="Commandes Utilitaires", description="À utiliser...", emoji="🔧"),
+                discord.SelectOption(label="Commandes Admin", description="S/O le prince", emoji="👑")
+
             ]
         )
         select.callback = category_select_callback
@@ -81,12 +94,15 @@ async def helpCommand(ctx, confData):
 
         # Envoi initial de l'embed avec la catégorie par défaut "Utilitaires"
         embed = discord.Embed(
-            title="Commandes - Commandes Utilitaires",
+            title="Commandes - Choisis ta catégorie",
             description=f"Mon préfix est : **{confData['prefix']}**",
             color=discord.Color.red()
         )
-        embed.add_field(name="🔧 | emojis", value="Les emojis custom du serv", inline=False)
-        embed.add_field(name="🔧 | find", value="L'ID a qui :interrobang:", inline=False)
+        embed.add_field(name="🎉 | Commandes Fun", value="On se fend la poire 👀", inline=False)
+        embed.add_field(name="🎵 | Commandes Spotify", value="Bv l'API", inline=False)
+        embed.add_field(name="🔧 | Commandes Utilitaires", value="À utiliser...", inline=False)
+        embed.add_field(name="👑 | Commandes Admin", value="S/O le prince", inline=False)
+
 
         # Ajout des images à l'embed
         embed.set_thumbnail(url="attachment://pp.jpg")  # Image 1 dans thumbnail

@@ -5,9 +5,7 @@ from dotenv import load_dotenv
 import os
 import json
 import time
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-from spotipy.oauth2 import SpotifyOAuth
+
 
 # Importation des commandes personnalisées
 from commands.helpCommand import helpCommand
@@ -17,22 +15,14 @@ from commands.emojisCommand import emojisCommand
 from commands.setupCommand import setupCommand
 from commands.findCommand import findCommand
 from commands.purgeCommand import purgeCommand
+from commands.protectCommands import protectCommand, unprotectCommand
+from commands.spotifyCommands import linkspotifyCommand, spotifycodeCommand, findspotifyCommand
 
 # Charger les variables d'environnement
 load_dotenv()
 
 # Configurer les informations d'authentification Spotify
-SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
-SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
-REDIRECT_URI = 'https://annually-comic-eagle.ngrok-free.app/callback'
-SCOPE = "user-library-read user-read-playback-state user-modify-playback-state playlist-modify-public"
 
-sp_oauth = SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
-                        client_secret=SPOTIFY_CLIENT_SECRET,
-                        redirect_uri=REDIRECT_URI,
-                        scope=SCOPE)
-
-user_tokens = {}
 
 
 
@@ -53,7 +43,8 @@ bot.remove_command('help')  # Retirer la commande d'aide par défaut pour utilis
 
 # Variables globales pour stocker les ID de message protégé et de canal de logs
 protected_message_id = None
-
+# Dictionnaire pour garder une trace des messages des utilisateurs
+user_messages = {}
 
 
 
@@ -69,8 +60,7 @@ async def on_ready():
     print(f"\nprefix => {confData['prefix']}")
 
 
-# Dictionnaire pour garder une trace des messages des utilisateurs
-user_messages = {}
+
 
 
 @bot.event
@@ -153,42 +143,19 @@ async def on_message_delete(message):
             print(f"Erreur inattendue : {str(e)}")
 
 
-@bot.command(name='linkspotify')
-async def link_spotify(ctx):
-    auth_url = sp_oauth.get_authorize_url()
-    await ctx.author.send(f"Pour lier ton compte Spotify, clique sur ce lien : {auth_url}\n"
-                          "Après avoir autorisé l'accès, copie le code de la redirection affiché sur le site et envoie-le ici.")
+@bot.command()
+async def linkspotify(ctx):
+    await linkspotifyCommand(ctx)
 
 # Commande pour recevoir le code d'autorisation et récupérer le token
-@bot.command(name='spotifycode')
-async def spotify_code(ctx, code: str):
-    try:
-        token_info = sp_oauth.get_access_token(code)
-        user_id = ctx.author.id
-        user_tokens[user_id] = token_info  # Stocker le token pour l'utilisateur
-        await ctx.send("Ton compte Spotify a été lié avec succès !")
-    except Exception as e:
-        await ctx.send(f"Erreur lors de la liaison du compte Spotify : {str(e)}")
+@bot.command()
+async def spotifycode(ctx, code: str):
+    await spotifycodeCommand(ctx, code)
 
 # Commande pour rechercher une chanson sur Spotify
-@bot.command(name='findspotify')
-async def find_spotify(ctx, *, query):
-    try:
-        # Initialisation de Spotify avec les credentials de l'application
-        client_credentials_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
-        spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
-
-        # Rechercher une chanson sur Spotify
-        results = spotify.search(q=query, limit=1, type='track')
-
-        if results['tracks']['items']:
-            track = results['tracks']['items'][0]
-            song_url = track['external_urls']['spotify']
-            await ctx.send(f"Voici la chanson que tu as recherchée : {song_url}")
-        else:
-            await ctx.send("Aucun résultat trouvé.")
-    except Exception as e:
-        await ctx.send(f"Une erreur s'est produite lors de la recherche : {str(e)}")
+@bot.command()
+async def spotimusic(ctx, *, query):
+    await findspotifyCommand(ctx, query=query)
 
 
 
@@ -196,27 +163,13 @@ async def find_spotify(ctx, *, query):
 # Commande pour protéger un message
 @bot.command()
 async def protect(ctx, message_id: int):
-    global protected_message_id
-
-    # Récupérer le message par ID
-    try:
-        message = await ctx.channel.fetch_message(message_id)
-        protected_message_id = message.id
-        await ctx.send(f"Le message avec l'ID {message_id} est maintenant protégé.")
-    except discord.NotFound:
-        await ctx.send("Message non trouvé. Assurez-vous que l'ID est correct et que le message existe.")
-    except Exception as e:
-        await ctx.send(f"Une erreur s'est produite : {str(e)}")
+    await protectCommand(ctx, message_id, bot)
 
 
 @bot.command()
 async def unprotect(ctx):
-    global protected_message_id
-    protected_message_id = None
-    await ctx.send("Le message protégé a été déprotégé.")
+    await unprotectCommand(ctx, bot)
 
-
-###############################################
 
 
 # Commande de configuration du canal de logs
@@ -229,21 +182,7 @@ async def setup(ctx):
 # Commande pour purger des messages
 @bot.command()
 async def purge(ctx, amount: int):
-    if amount < 1:
-        await ctx.send(f"{ctx.author.mention} Merci de rentrer un nombre supérieur ou égal à **1**")
-        return
-
-    # Vérification des permissions
-    if not ctx.author.guild_permissions.manage_messages:
-        await ctx.send(f"{ctx.author.mention}, vous n'avez pas la permission de gérer (et supprimer) les messages.")
-        return
-
-    try:
-        deleted = await ctx.channel.purge(limit=amount + 1)  # +1 pour supprimer le message de commande aussi
-        await ctx.send(f"{ctx.author.mention} J'ai supprimé **{len(deleted) - 1}** message(s).",
-                       delete_after=5)  # Supprime le message de confirmation après 5 secondes
-    except Exception as e:
-        await ctx.send(f"{ctx.author.mention} Une erreur s'est produite : {str(e)}")
+    await purgeCommand(ctx, amount, bot)
 
 
 # Commande pour trouver un utilisateur
