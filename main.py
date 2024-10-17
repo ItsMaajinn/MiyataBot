@@ -1,34 +1,61 @@
 import discord
 from discord.ext import commands
 import asyncio
-import json
 from dotenv import load_dotenv
 import os
+import json
 import time
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyOAuth
+
+# Importation des commandes personnalisées
 from commands.helpCommand import helpCommand
 from commands.infoCommand import infoCommand
+from commands.serveursCommand import serveursCommand
+from commands.emojisCommand import emojisCommand
+from commands.setupCommand import setupCommand
+from commands.findCommand import findCommand
+from commands.purgeCommand import purgeCommand
 
 # Charger les variables d'environnement
 load_dotenv()
 
-# Récupérer le token
+# Configurer les informations d'authentification Spotify
+SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
+REDIRECT_URI = 'https://annually-comic-eagle.ngrok-free.app/callback'
+SCOPE = "user-library-read user-read-playback-state user-modify-playback-state playlist-modify-public"
+
+sp_oauth = SpotifyOAuth(client_id=SPOTIFY_CLIENT_ID,
+                        client_secret=SPOTIFY_CLIENT_SECRET,
+                        redirect_uri=REDIRECT_URI,
+                        scope=SCOPE)
+
+user_tokens = {}
+
+
+
+# Charger les variables d'environnement pour Discord
 TOKEN = os.getenv('TOKEN')
 
 # Ouvrir le fichier de configuration
 with open('config.json', 'r') as cfg:
     confData = json.load(cfg)
 
-# Initialiser les intentions du bot
+# Initialiser les intentions du bot Discord
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True  # Activer l'intention pour voir les membres
 intents.messages = True  # Activer l'intention pour écouter les messages
 bot = commands.Bot(command_prefix=confData["prefix"], intents=intents)
-bot.remove_command('help')
+bot.remove_command('help')  # Retirer la commande d'aide par défaut pour utiliser une personnalisée
 
 # Variables globales pour stocker les ID de message protégé et de canal de logs
 protected_message_id = None
-log_channel_id = None
+
+
+
 
 # Événement de démarrage du bot
 @bot.event
@@ -41,8 +68,10 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
     print(f"\nprefix => {confData['prefix']}")
 
+
 # Dictionnaire pour garder une trace des messages des utilisateurs
 user_messages = {}
+
 
 @bot.event
 async def on_message(message):
@@ -94,12 +123,14 @@ async def on_message_delete(message):
 
                     # Récupérer le canal d'origine du message
                     original_channel = message.channel
-                    countdown_message = await original_channel.send(f"Message protégé supprimé : {message.content or 'Embed supprimé.'}\n\nRéapparaîtra dans 11 secondes...")
+                    countdown_message = await original_channel.send(
+                        f"Message protégé supprimé : {message.content or 'Embed supprimé.'}\n\nRéapparaîtra dans 11 secondes...")
 
                     # Compte à rebours avant de réafficher le message
                     for i in range(11, 0, -1):
                         await asyncio.sleep(1)
-                        await countdown_message.edit(content=f"Message protégé supprimé : {message.content or 'Embed supprimé.'}\n\nRéapparaîtra définitivement dans {i} secondes...")
+                        await countdown_message.edit(
+                            content=f"Message protégé supprimé : {message.content or 'Embed supprimé.'}\n\nRéapparaîtra définitivement dans {i} secondes...")
 
                     # Réapparition du message après le compte à rebours
                     if message.embeds:  # Si le message contient un embed
@@ -111,7 +142,8 @@ async def on_message_delete(message):
                         await original_channel.send("Message protégé supprimé.")  # Si ni texte ni embed (très rare)
                     break
             else:
-                await log_channel.send(f"Un message protégé a été supprimé, mais l'utilisateur responsable n'a pas pu être identifié.")
+                await log_channel.send(
+                    f"Un message protégé a été supprimé, mais l'utilisateur responsable n'a pas pu être identifié.")
 
         except discord.Forbidden:
             print("Erreur : permissions insuffisantes pour accéder aux logs d'audit.")
@@ -121,11 +153,45 @@ async def on_message_delete(message):
             print(f"Erreur inattendue : {str(e)}")
 
 
-@bot.command()
-async def unprotect(ctx):
-    global protected_message_id
-    protected_message_id = None
-    await ctx.send("Le message protégé a été déprotégé.")
+@bot.command(name='linkspotify')
+async def link_spotify(ctx):
+    auth_url = sp_oauth.get_authorize_url()
+    await ctx.author.send(f"Pour lier ton compte Spotify, clique sur ce lien : {auth_url}\n"
+                          "Après avoir autorisé l'accès, copie le code de la redirection affiché sur le site et envoie-le ici.")
+
+# Commande pour recevoir le code d'autorisation et récupérer le token
+@bot.command(name='spotifycode')
+async def spotify_code(ctx, code: str):
+    try:
+        token_info = sp_oauth.get_access_token(code)
+        user_id = ctx.author.id
+        user_tokens[user_id] = token_info  # Stocker le token pour l'utilisateur
+        await ctx.send("Ton compte Spotify a été lié avec succès !")
+    except Exception as e:
+        await ctx.send(f"Erreur lors de la liaison du compte Spotify : {str(e)}")
+
+# Commande pour rechercher une chanson sur Spotify
+@bot.command(name='findspotify')
+async def find_spotify(ctx, *, query):
+    try:
+        # Initialisation de Spotify avec les credentials de l'application
+        client_credentials_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
+        spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+        # Rechercher une chanson sur Spotify
+        results = spotify.search(q=query, limit=1, type='track')
+
+        if results['tracks']['items']:
+            track = results['tracks']['items'][0]
+            song_url = track['external_urls']['spotify']
+            await ctx.send(f"Voici la chanson que tu as recherchée : {song_url}")
+        else:
+            await ctx.send("Aucun résultat trouvé.")
+    except Exception as e:
+        await ctx.send(f"Une erreur s'est produite lors de la recherche : {str(e)}")
+
+
+
 
 # Commande pour protéger un message
 @bot.command()
@@ -142,37 +208,25 @@ async def protect(ctx, message_id: int):
     except Exception as e:
         await ctx.send(f"Une erreur s'est produite : {str(e)}")
 
+
+@bot.command()
+async def unprotect(ctx):
+    global protected_message_id
+    protected_message_id = None
+    await ctx.send("Le message protégé a été déprotégé.")
+
+
+###############################################
+
+
 # Commande de configuration du canal de logs
 @bot.command()
-@commands.has_permissions(manage_guild=True)  # Vérifie si l'utilisateur a la permission de gérer le serveur
+@commands.has_permissions(manage_guild=True)
 async def setup(ctx):
-    global log_channel_id
-    guild = ctx.guild
+    await setupCommand(ctx, bot)
 
-    # Vérifie si un canal existe déjà pour les logs
-    existing_channel = discord.utils.get(guild.text_channels, name="logs-suppression")
-    if existing_channel:
-        await ctx.send("Le canal `logs-suppression` existe déjà.")
-        log_channel_id = existing_channel.id
-        return
 
-    # Créer un canal textuel nommé "logs-suppression"
-    log_channel = await guild.create_text_channel('logs-suppression')
-    log_channel_id = log_channel.id
-
-    await ctx.send(f"Le canal {log_channel.mention} a été créé pour les logs de suppression.")
-
-    # Stocker l'ID du canal pour l'utiliser dans d'autres commandes
-    with open('config.json', 'r') as f:
-        config = json.load(f)
-
-    config['log_channel_id'] = log_channel.id  # Stocker l'ID du canal
-
-    with open('config.json', 'w') as f:
-        json.dump(config, f)
-
-    await ctx.send(f"Le canal de logs des suppressions de messages est prêt à l'emploi.")
-
+# Commande pour purger des messages
 @bot.command()
 async def purge(ctx, amount: int):
     if amount < 1:
@@ -186,121 +240,72 @@ async def purge(ctx, amount: int):
 
     try:
         deleted = await ctx.channel.purge(limit=amount + 1)  # +1 pour supprimer le message de commande aussi
-        await ctx.send(f"{ctx.author.mention} J'ai supprimé **{len(deleted) - 1}** message(s).", delete_after=5)  # Supprime le message de confirmation après 5 secondes
-
-        await asyncio.sleep(5)  # Attendre 10 secondes
-
-        # Optionnel : si vous voulez purger un message après 10 secondes, spécifiez le message ou la condition
-        await ctx.channel.purge(limit=1)  # Cela supprimera le dernier message (dans ce cas, le message de confirmation)
+        await ctx.send(f"{ctx.author.mention} J'ai supprimé **{len(deleted) - 1}** message(s).",
+                       delete_after=5)  # Supprime le message de confirmation après 5 secondes
     except Exception as e:
         await ctx.send(f"{ctx.author.mention} Une erreur s'est produite : {str(e)}")
 
+
+# Commande pour trouver un utilisateur
 @bot.command()
 async def find(ctx, id: int):
-    try:
-        # Essayer de récupérer un membre du serveur actuel
-        member = await ctx.guild.fetch_member(id)
-        await ctx.send(f"Utilisateur trouvé dans ce serveur : {member.name}#{member.discriminator}")
-    except discord.NotFound:
-        # Si le membre n'est pas dans le serveur, essayer de récupérer les infos globales de l'utilisateur
-        user = await bot.fetch_user(id)
-        await ctx.send(f"Utilisateur trouvé globalement : {user.name}#{user.discriminator}")
-    except discord.Forbidden:
-        await ctx.send("Je n'ai pas la permission de récupérer les informations de cet utilisateur.")
-    except Exception as e:
-        await ctx.send(f"Erreur : {str(e)}")
+    await findCommand(ctx, id, bot)
 
+# Commande d'aide personnalisée
 @bot.command()
 async def help(ctx):
-    await helpCommand(ctx, confData)  # Appeler la fonction d'aide depuis le fichier séparé
-
-@bot.command()
-async def flammes(ctx):
-    async with ctx.typing():
-        await ctx.channel.send('Ya un mec qui vient me voir sur snap il me dit')
-        await ctx.channel.send('Selem bassem vient sur snap.')
-        await asyncio.sleep(3)  # Pause de 3 secondes
-        await ctx.channel.send('J’y vais')
-        await asyncio.sleep(2)  # Pause de 2 secondes
-        await ctx.channel.send('Aldel veut que je le ressorte, vas-y je vais y aller')
+    await helpCommand(ctx, confData)
 
 
-@bot.command()
-async def allobassem(ctx):
-    async with ctx.typing():
-        await asyncio.sleep(10)
-    await ctx.send(f"{ctx.author.mention}  :clown: Oe c greg")
-
-@bot.command()
-async def nuke(ctx):
-    await ctx.send("https://tenor.com/view/fallout76-nuke-friends-bomb-nuclear-gif-14693420697390417365")
-    await ctx.send(":joy_cat: :index_pointing_at_the_viewer:")
-
+# Commande "info"
 @bot.command()
 async def info(ctx, member: discord.Member = None):
-    await infoCommand(ctx, bot, member)  # Appel de la fonction depuis le fichier séparé
+    await infoCommand(ctx, bot, member)
 
 
-
-
-# Fonction modifiée pour retourner également les noms des serveurs communs
-async def count_common_servers(ctx, member):
-    """Compter le nombre de serveurs partagés avec un utilisateur et obtenir leurs noms."""
-    common_count = 0  # Compteur pour le nombre de guildes communes
-    server_names = []  # Liste des noms des guildes communes
-
-    # Parcourir toutes les guildes du bot
-    for guild in bot.guilds:
-        # Vérifier si le membre est présent dans la guilde
-        if member in guild.members:  # Vérification directe de la présence du membre
-            common_count += 1  # Incrémenter le compteur si l'utilisateur est dans la guilde
-            server_names.append(guild.name)  # Ajouter le nom de la guilde à la liste
-
-    return common_count, server_names
-
-
-
+# Commande "serveurs"
 @bot.command()
 async def serveurs(ctx, member: discord.Member = None):
-    """Vérifie combien de serveurs sont partagés avec un utilisateur spécifié."""
-    if member is None:
-        member = ctx.author  # Si aucun utilisateur n'est mentionné, utiliser l'auteur de la commande
-
-    common_count = 0  # Compteur pour le nombre de guildes communes
-    noms = []  # Liste pour stocker les noms des guildes communes
-
-    # Parcourir toutes les guildes du bot
-    for guild in bot.guilds:
-        # Vérifier si le membre est présent dans la guilde
-        if member in guild.members:  # Vérification directe de la présence du membre
-            common_count += 1  # Incrémenter le compteur si l'utilisateur est dans la guilde
-            noms.append(guild.name)  # Ajouter le nom de la guilde à la liste
-
-    # Formatage de la liste des noms de guildes
-    nomStr = "\n".join([f"* {nom}" for nom in noms]) if noms else "Aucun serveur commun."
-
-    # Envoyer le résultat
-    await ctx.send(f"{member.mention} et le bot sont dans {common_count} serveurs : \n{nomStr}")
+    await serveursCommand(ctx, bot, member)
 
 
-
+# Commande "emojis"
 @bot.command()
 async def emojis(ctx):
-    emojis = ctx.guild.emojis  # Récupère la liste des émojis personnalisés du serveur
-    if emojis:  # Vérifie s'il y a des émojis
-        emoji_list = "\n".join([f"{str(emoji)} : {emoji.name} (ID: {emoji.id})" for emoji in emojis])  # Formate la liste des émojis
+    await emojisCommand(ctx)
 
-        # Découpe le message en morceaux de moins de 2000 caractères
-        for chunk in [emoji_list[i:i + 2000] for i in range(0, len(emoji_list), 2000)]:
-            await ctx.send(chunk)
-    else:
-        await ctx.send("Ce serveur n'a pas d'émojis personnalisés.")
 
+# Commande pour éteindre le bot
 @bot.command()
 @commands.is_owner()
 async def shutdown(context):
     exit()
 
+
+# -------------- Commandes Trolls --------------
+
+# Commande personnalisée "flammes"
+@bot.command()
+async def flammes(ctx):
+    await ctx.channel.send('Ya un mec qui vient me voir sur snap il me dit')
+    await asyncio.sleep(1)
+    await ctx.channel.send('Selem bassem vient on fait les flammes')
+    await asyncio.sleep(1)
+    await ctx.channel.send('Les flammes ? Brûle toi avec sale c*nnard va')
+
+
+# Commande personnalisée "allobassem"
+@bot.command()
+async def allobassem(ctx):
+    await asyncio.sleep(10)
+    await ctx.send(f"{ctx.author.mention}  :clown: Oe c greg")
+
+
+# Commande "nuke"
+@bot.command()
+async def nuke(ctx):
+    await ctx.send("https://tenor.com/view/fallout76-nuke-friends-bomb-nuclear-gif-14693420697390417365")
+    await ctx.send(":joy_cat: :index_pointing_at_the_viewer:")
 
 
 # Lancer le bot

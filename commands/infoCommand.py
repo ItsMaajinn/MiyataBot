@@ -53,16 +53,22 @@ async def infoCommand(ctx, bot, member: discord.Member = None):
         embed.set_thumbnail(url=avatar_url)  # Ajouter l'avatar en miniature
 
         # Ajouter les informations à l'embed
-        embed.add_field(name="Avatar", value=f"[Lien de l'avatar]({avatar_url})", inline=True)
-        embed.add_field(name="Date de création du compte", value=creation_date.strftime("%d/%m/%Y à %H:%M:%S"), inline=False)
-        embed.add_field(name="Âge du compte", value=format_time_difference(account_age), inline=False)
-        embed.add_field(name="Date d'arrivée sur le serveur", value=join_date.strftime("%d/%m/%Y à %H:%M:%S") if join_date else "Inconnu", inline=False)
-        embed.add_field(name="Âge sur le serveur", value=format_time_difference(server_age) if server_age else "Inconnu", inline=False)
-        embed.add_field(name="Pseudo d'affichage", value=display_name, inline=False)
-        embed.add_field(name="Vrai pseudo", value=real_name, inline=False)
-        embed.add_field(name="ID", value=member.id, inline=False)
-        embed.add_field(name="Nombre de serveurs en commun", value=f"{len(common_servers)}", inline=False)
-        embed.add_field(name="Serveurs communs", value=server_list_str, inline=False)  # Liste des serveurs
+        # Bloc 1 : Aligné entre 2 et 3
+        embed.add_field(name="Date de création du compte", value=creation_date.strftime("%d/%m/%Y"), inline=True)
+        embed.add_field(name="Date d'arrivée sur le serveur", value=join_date.strftime("%d/%m/%Y") if join_date else "Inconnu", inline=True)
+        embed.add_field(name="", value="", inline=False)
+
+        # Bloc 2
+        embed.add_field(name="Pseudo d'affichage", value=display_name, inline=True)
+        embed.add_field(name="Vrai pseudo", value=real_name, inline=True)
+        embed.add_field(name="ID", value=member.id, inline=True)
+        embed.add_field(name ="", value="", inline=False)
+
+        #Bloc 3
+        embed.add_field(name="Nombre de serveurs", value=f"{len(common_servers)}", inline=True)
+        embed.add_field(name="Serveurs communs", value=server_list_str, inline=True)  # Liste des serveurs
+        embed.add_field(name ="", value="", inline=False)
+
 
         # Si l'utilisateur a une bannière, l'ajouter à l'embed
         if banner_url:
